@@ -5,6 +5,7 @@
 */
 
 #include "stevensStringLib.h"
+#include <iterator>
 
 #ifndef STEVENSMAPLIB
 #define STEVENSMAPLIB
@@ -120,8 +121,27 @@ namespace stevensMapLib
     K getRandomKey( const M<K,V> & map )
     {
         auto it = map.begin();
-        std::advance( it, rand() % map.size() );
+        long long int advanceAmount = rand() % map.size();
+        std::advance( it, advanceAmount );
         return it->first;
+    }
+
+
+    /**
+     * @brief Gets a random value from a maplike object
+     * 
+     * @tparam M the maplike type we are getting a value from.
+     * @tparam K the type of key in the maplike type we are getting a value from.
+     * @tparam V the type of value we are getting.
+     * 
+     * @param map The map object we are picking a random value from.
+     * 
+     * @return A random value found in map.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    V getRandomValue( const M<K,V> & map )
+    {
+        return map.at(stevensMapLib::getRandomKey(map));
     }
 
 
@@ -164,6 +184,29 @@ namespace stevensMapLib
             keyVector.push_back(key);
         }
         return keyVector;
+    }
+
+
+    /**
+     * @brief Gets a vector containing all of the values from each pair within the given map.
+     * 
+     * @tparam M The type of maplike object we are obtaining values from.
+     * @tparam K The type of keys in the map.
+     * @tparam V THe type of values in the map.
+     * @tparam Args
+     * @param map - THe maplike object we are obtaining values from.
+     * @return std::vector<V> - A vector containing all of the values found in order from the maplike object.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    std::vector<V> getValueVector(  const M<K,V> & map )
+    {
+        //Initialize a vector that we will push values back into
+        std::vector<V> valueVector;
+        for(const auto & [key,value] : map)
+        {
+            valueVector.push_back(value);
+        }
+        return valueVector;
     }
 
 
@@ -275,7 +318,7 @@ namespace stevensMapLib
     template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
     K createUniqueKeyString(    M<K,V> & map,
                                 K keyString = "",
-                                std::string & algorithm = "integer concatenation"    )
+                                const std::string & algorithm = "integer concatenation"    )
     {
         if(algorithm == "integer concatenation")
         {
@@ -306,6 +349,12 @@ namespace stevensMapLib
     template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
     std::pair<K,V> popRandom(   M<K,V> & map    )
     {
+        //Can't pop a key if the map is empty
+        if(map.size() == 0)
+        {
+            throw std::invalid_argument("stevensMapLib::popRandom() cannot pop a random pair from an empty map.");
+        }
+
         //Get a random pair from the map using getRandomKey()
         K key = stevensMapLib::getRandomKey(map);
         V value = map[key];
@@ -314,6 +363,30 @@ namespace stevensMapLib
         //Erase the pair from the source map
         map.erase(key);
         return randomPair;
+    }
+
+
+    /**
+     * @brief Given a maplike object map, insert a range of integers as string keys within the map.
+     * 
+     * @tparam M The type of the maplike object map.
+     * @tparam K The keys belonging to the maplike object map.
+     * @tparam V The values belonging to the maplike object map.
+     * @tparam Args
+     * @param map The maplike object we are inserting an integer range of keys into.
+     * @param rangeStart The first number to insert as a key into the map.
+     * @param rangeEnd The last number to insert as a key into the map.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    void insertNumericRangeAsStringKeys(    M<K,V> & map,
+                                            const long long int & rangeStart,
+                                            const long long int & rangeEnd  )
+    {
+        //Insert every number in the range as a string key
+        for(int i = rangeStart; i <= rangeEnd; i++)
+        {
+            map[std::to_string(i)];
+        }
     }
 
 
