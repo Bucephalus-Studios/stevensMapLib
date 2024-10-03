@@ -16,12 +16,12 @@ namespace stevensMapLib
 
     /*** Methods ***/
     /**
-     * Takes two maps as input and performs the + operation on their shared keys. The resulting pairs
-     * are returned in an unordered_map of the same type.
+     * Takes two maplike structures as input and performs the + operation on their shared keys. The resulting pairs
+     * are returned in a maplike object of the same type.
      * 
      * Parameters:
-     *  std::unordered_map<K,V> A - One of the unordered_maps we are adding together.
-     *  std::unordered_map<K,V> B - The other map we are adding together.
+     *  M<K,V> A - One of the maplike objects we are adding together.
+     *  M<K,V> B - The other maplike object we are adding to the first.
      *  std::string addOperationTarget - The target of the + operator with this function. Possible values are:
      *                                   ///"keys" - Only perform the + operation on keys
      *                                   "values" - Only perform the + operation on the values
@@ -30,13 +30,13 @@ namespace stevensMapLib
      * 
      * Returns:
     */
-    template<typename K, typename V> 
-    std::unordered_map<K,V> addUnordered_maps(  std::unordered_map<K,V> A,
-                                                std::unordered_map<K,V> B,
-                                                std::string addOperationTarget = "keys and values",
-                                                bool omitKeysNotShared = false )
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    M<K,V> addMaps  (   M<K,V> A,
+                        M<K,V> B,
+                        std::string addOperationTarget = "keys and values",
+                        bool omitKeysNotShared = false )
     {
-        std::unordered_map<K,V> AB = {};
+        M<K,V> AB = {};
 
         //Iterate through the pairs of map A and see if any match the keys of of map B
         for(const auto & [key,value] : A)
@@ -80,29 +80,97 @@ namespace stevensMapLib
 
 
     /**
-     * Converts an unordered_map with keys of type K and values of type V to a vector of tuples with the first index containing the key
+     * @brief Given a map with values of a numeric type and a numeric factor, multiply each value in the map by the factor, setting the 
+     *        values for each pair to be equal to the product of the factor and the initial value.
+     * 
+     * @param map The maplike object we are multiplying the values of.
+     * @param factor The factor we are multiplying the values of the map by.
+     * 
+     * @return The map parameter but with all of its values multiplied by the factor parameter.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    M<K,V> multiplyWithValues(  M<K,V> map,
+                                long double factor)
+    {
+        //Iterate through the map, multipling each value by the factor and setting the value equal to the product
+        for(auto & [key,value] : map)
+        {
+            value = value * factor;
+        }
+
+        return map;
+    }
+
+
+    /**
+     * @brief Given a map with values of a numeric type and a numeric initial value, sum all of the values in the map with eachtother.
+     * 
+     * @param map The map containing numeric values that we want to sum together.
+     * @param initialValue The value we begin our sum from.
+     * 
+     * @return The sum of all values in the map added to the initial value
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    V sumAllValues( M<K,V> map,
+                    V initialValue = 0  )
+    {
+        V sum = initialValue;
+
+        for(const auto & [key, value] : map)
+        {
+            sum += value; 
+        }
+
+        return sum;
+    }
+
+
+
+    /**
+     * Converts a maplike object with keys of type K and values of type V to a vector of tuples with the first index containing the key
      * and the second index containing the value.
      * 
      * Parameter:
-     *  std::unordered_map<K,V> umap - The unordered map that we want to convert to a vector of tuples.
+     *  M<K,V> umap - The map that we want to convert to a vector of tuples.
      * 
      * Returns:
-     *  std::vector< tuple<K,V> > - A vector containing tuples of the key-value pairs from the passed-in unordered_map in no particular order.
+     *  std::vector< tuple<K,V> > - A vector containing tuples of the key-value pairs from the passed-in map in no particular order.
      * 
     */
-    template<typename K, typename V>
-    std::vector< std::tuple<K,V> > unordered_map_to_vecOfTuples( std::unordered_map<K,V> umap )
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    std::vector< std::tuple<K,V> > mapToVecOfTuples( M<K,V> map )
     {
         std::vector< std::tuple<K,V> > returnVec = {};
 
         //Iterate through the unordered_map
-        for(const auto & [key,value] : umap)
+        for(const auto & [key,value] : map)
         {
             //Construct a tuple containing the key and the value and push it to the returnVec
             returnVec.push_back( std::make_tuple(key,value) );
         }
 
         return returnVec;
+    }
+
+
+    /**
+     * @brief Given a map with typing M<K,V>, return the map with all of its keys contained in a given vector erased.
+     * 
+     * @param map The map we want to erase keys from.
+     * @param keysToErase A vector of keys we want to erase from the map, if the map contains them.
+     * 
+     * @return The parameter map but with all of its keys contained within keysToErase erased from it.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    M<K,V> erase(   M<K,V> map, 
+                    const std::vector<K> & keysToErase)
+    {
+        //For each key to erase, erase it from the map
+        for(int i = 0; i < keysToErase.size(); i++)
+        {
+            map.erase(keysToErase[i]);
+        }
+        return map;
     }
 
 
@@ -120,6 +188,10 @@ namespace stevensMapLib
     template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
     K getRandomKey( const M<K,V> & map )
     {
+        if(map.size() == 0)
+        {
+            throw std::invalid_argument("stevensMapLib::getRandomKey() cannot get a random key from an empty map");
+        }
         auto it = map.begin();
         long long int advanceAmount = rand() % map.size();
         std::advance( it, advanceAmount );
@@ -141,6 +213,10 @@ namespace stevensMapLib
     template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
     V getRandomValue( const M<K,V> & map )
     {
+        if(map.size() == 0)
+        {
+            throw std::invalid_argument("stevensMapLib::getRandomValue() cannot get a random value from an empty map");
+        }
         return map.at(stevensMapLib::getRandomKey(map));
     }
 
@@ -316,7 +392,7 @@ namespace stevensMapLib
      * 
      */
     template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    K createUniqueKeyString(    M<K,V> & map,
+    K createUniqueKeyString(    const M<K,V> & map,
                                 K keyString = "",
                                 const std::string & algorithm = "integer concatenation"    )
     {
@@ -352,7 +428,7 @@ namespace stevensMapLib
         //Can't pop a key if the map is empty
         if(map.size() == 0)
         {
-            throw std::invalid_argument("stevensMapLib::popRandom() cannot pop a random pair from an empty map.");
+            throw std::invalid_argument("stevensMapLib::popRandom() cannot pop a random pair from an empty map");
         }
 
         //Get a random pair from the map using getRandomKey()
@@ -387,6 +463,79 @@ namespace stevensMapLib
         {
             map[std::to_string(i)];
         }
+    }
+
+
+    /**
+     * @brief Given a maplike object with a numeric-type as its values, return the key-value pair from the
+     *        maplike object with the greatest value. If more than one pair has the greatest value, we will return
+     *        the pair that comes earliest in iterating through the pairs.
+     * 
+     * @param map The maplike object with numeric values which we are obtaining pair with the greatest value.
+     * @return A std::pair<K,V> object from map containing the greatest value from all existing pairs in the map.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    std::pair<K,V> getPairWithMaxValue( const M<K,V> & map  )
+    {
+        //Check to see if the map is empty; we can't get a pair from an empty map
+        if(map.empty())
+        {
+            throw std::invalid_argument("stevensMapLib::getPairWithMaxValue() cannot get a pair from an empty map");
+        }
+
+        //Establish the key and value of the max pair
+        K maxKey = stevensMapLib::getFirstKey(map);
+        V maxValue = map.at(maxKey);
+        //Iterate through all of the the key-value pairs in the map
+        for(const auto & [key,value] : map)
+        {
+            //If we find a value greater than the max value, set the max value to the value of the current pair's value
+            if(value > maxValue)
+            {
+                maxValue = value;
+                maxKey = key;
+            }
+        }
+
+        //Reconstruct the pair we found containing the max value from the map
+        std::pair<K,V> maxPair = std::pair(maxKey, maxValue); 
+        return maxPair;
+    }
+
+
+    /**
+     * @brief Given a maplike object with a numeric type object for its keys (or a type that can be compared with > < operators),
+     *        return the key-value pair from the maplike object with the greatest key.
+     * 
+     * @param map The maplike object with a comparable type for keys which we are obtaining the pair with the greatest key.
+     * @return A std::pair<K,V> object from map containing the greatest key from all pairs existing in the map.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    std::pair<K,V> getPairWithMaxKey(   const M<K,V> & map  )
+    {
+        //Check to see if the map is empty; we can't get a pair from an empty map
+        if(map.empty())
+        {
+            throw std::invalid_argument("stevensMapLib::getPairWithMaxKey() cannot get a pair from an empty map");
+        }
+
+        //Establish the key and value of the max pair
+        K maxKey = stevensMapLib::getFirstKey(map);
+        V maxValue = map.at(maxKey);
+        //Iterate through all of the the key-value pairs in the map
+        for(const auto & [key,value] : map)
+        {
+            //If we find a key greater than the max key, set the max key to the the current pair's key
+            if(key > maxKey)
+            {
+                maxValue = value;
+                maxKey = key;
+            }
+        }
+
+        //Reconstruct the pair we found containing the max key from the map
+        std::pair<K,V> maxPair = std::pair(maxKey, maxValue); 
+        return maxPair;
     }
 
 
