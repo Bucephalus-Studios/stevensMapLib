@@ -8,7 +8,7 @@ You can use this map library with the Beldum Package Manager:
 - stevensStringLib
 
 ## Install
-Import "stevensVectorLib.hpp" into your own project
+Import "stevensMapLib.hpp" into your own project
 
 or
 
@@ -17,7 +17,7 @@ or
 mkdir new_project
 cd new_project
 beldum init
-beldum install stevensVectorLib
+beldum install stevensMapLib
 ```
 
 ## Usage
