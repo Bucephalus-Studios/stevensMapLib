@@ -22,7 +22,7 @@ beldum install stevensVectorLib
 
 ## Usage
 `src/main.cpp`
-```
+```cpp
 #include "stevensMapLib.hpp"
 
 #include <map>
