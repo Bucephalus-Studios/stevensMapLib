@@ -47,11 +47,11 @@ namespace stevensMapLib
                 //Store the matched value in map AB, and keep track of the key in map B that was found as a match
                 if(addOperationTarget == "values")
                 {
-                    AB[key] = A[key] + B[key];
+                    AB[key] = A.at(key) + B.at(key);
                 }
                 else //keys and values
                 {
-                    AB[key + key] = A[key] + B[key];
+                    AB[key + key] = A.at(key) + B.at(key);
                 }
             }
             else
@@ -76,6 +76,67 @@ namespace stevensMapLib
         }
 
         return AB;
+    }
+
+
+    /**
+     * @brief Copies the elements of a source map to a destination map.
+     * 
+     * @credit https://stackoverflow.com/a/22220891
+     * 
+     * @param sourceMap The map which we are copying keys and values from.
+     * @param destinationMap The map which keys and values are being copied to.
+     * @param overwrite If the overwrite parameter is set to true, then the returned combined map will use the
+     *                  sourceMap's value for any commonly-held keys. If false, the destination
+     *                  map's value will be used for any commonly-held keys.
+     * 
+     * @return A maplike object with the combined keys and values of a source map and destination map.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    M<K,V> combineMaps( M<K,V> sourceMap,
+                        M<K,V> destinationMap,
+                        bool overwrite = false)
+    {
+        if(overwrite)
+        {
+            //Copy the elements of the source map to the destination map. If a key is held in common between the maps,
+            //we use the value of the sourceMap
+            for(auto & it : sourceMap)
+            {
+                destinationMap[it.first] = it.second;
+            }
+        }
+        else
+        {
+            //Copy the elements of the source map to the destination map without overwriting any commonly held keys
+            destinationMap.insert(sourceMap.begin(), sourceMap.end());
+        }
+        
+        return destinationMap;
+    }
+
+
+    /**
+     * @brief Checks to see if a maplike object contains a key equal to a parameter key. If it contains that key
+     *        and no other key, return true. Return false otherwise.
+     * 
+     * @param map The maplike object we are checking to see if it contains a key and only that key.
+     * @param key The key we are checking a maplike object to see if it contains only this key.
+     * 
+     * @return If map contains only the key param, return true. Return false otherwise.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    bool containsOnly(  const M<K,V> & map,
+                        const K & key   )
+    {
+        if( map.contains(key) )
+        {
+            if( map.size() == 1 )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -140,9 +201,9 @@ namespace stevensMapLib
     template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
     std::vector< std::tuple<K,V> > mapToVecOfTuples( M<K,V> map )
     {
-        std::vector< std::tuple<K,V> > returnVec = {};
+        std::vector< std::tuple<K,V> > returnVec;
 
-        //Iterate through the unordered_map
+        //Iterate through the map
         for(const auto & [key,value] : map)
         {
             //Construct a tuple containing the key and the value and push it to the returnVec
@@ -150,6 +211,25 @@ namespace stevensMapLib
         }
 
         return returnVec;
+    }
+
+
+    /**
+     * @brief Converts a maplike object with keys of type K and values of type V to a vector of pairs, where the key is stored under
+     *        std::pair::first and the value is stored under std::pair::second.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    std::vector< std::pair<K,V> > mapToVector(  const M<K,V> & map    )
+    {
+        std::vector< std::pair<K,V> > returnVector;
+
+        //Iterate through the map
+        for(const auto & [key,value] : map)
+        {
+            returnVector.push_back( std::pair(key,value) );
+        }
+
+        return returnVector;
     }
 
 
@@ -241,6 +321,25 @@ namespace stevensMapLib
 
 
     /**
+     * @brief Returns the value from the first pair in the maplike object.
+     * 
+     * @tparam M The maplike type we are getting a value from.
+     * @tparam K The key type of the pairs in the maplike type we are getting a value from.
+     * @tparam V The value type we are getting
+     * 
+     * @param map The map object we are getting the first value from
+     * 
+     * @return The first value from the map
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    V getFirstValue( const M<K,V> & map )
+    {
+        auto it = map.begin();
+        return it->second;
+    }
+
+
+    /**
      * @brief Gets a vector containing all of the keys from each pair within the given map.
      * 
      * @tparam M The type of the maplike object we are obtaining keys from.
@@ -313,6 +412,36 @@ namespace stevensMapLib
         {
             //Add the pair that starts with str to the map that will be returned
             if(stevensStringLib::startsWith(key, str))
+            {
+                returnMap.emplace(key, value);
+            }
+        }
+        //Return the map with pairs that have only keys beginning with str
+        return returnMap;
+    }
+
+
+    /**
+     * @brief Returns the given map parameter with all of its stringlike keys that begin with the given string str erased.
+     * 
+     * @param map A maplike object containing stringlike keys.
+     * @param str A stringlike object which we will check against all of the keys of the given map to see if they match the first characters of.
+     *            If so, we erase them from the map.
+     * 
+     * @return The given maplike object with all of its stringlike keys that begin with str having been erased.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    M<K,V> erasePairsWhereKeysStartWith(    const M<K,V> map,
+                                            const K & str)
+    {
+        //This is the map that we'll return
+        M<K,V> returnMap = {};
+
+        //Iterate through all the keys in the map
+        for(const auto & [key,value] : map)
+        {
+            //Add the pair that does NOT with str to the map that will be returned
+            if(!stevensStringLib::startsWith(key, str))
             {
                 returnMap.emplace(key, value);
             }
@@ -504,6 +633,43 @@ namespace stevensMapLib
 
 
     /**
+     * @brief Given a maplike object with a numeric-type as its values, return the key-value pair from the
+     *        maplike object with the smallest value. If more than one pair has the smallest value, we will return
+     *        the pair that comes earliest in iterating through the pairs.
+     * 
+     * @param map The maplike object with numeric values which we are obtaining pair with the smallest value.
+     * @return A std::pair<K,V> object from map containing the smallest value from all existing pairs in the map.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    std::pair<K,V> getPairWithMinValue(const M<K,V> & map)
+    {
+        //Check to see if the map is empty; we can't get a pair from an empty map
+        if(map.empty())
+        {
+            throw std::invalid_argument("stevensMapLib::getPairWithMinValue() cannot get a pair from an empty map");
+        }
+
+        //Establish the key and value of the min pair
+        K minKey = stevensMapLib::getFirstKey(map);
+        V minValue = map.at(minKey);
+        //Iterate through all of the key-value pairs in the map
+        for(const auto & [key,value] : map)
+        {
+            //If we find a value less than the min value, set the min value to the value of the current pair's value
+            if(value < minValue)
+            {
+                minValue = value;
+                minKey = key;
+            }
+        }
+
+        //Reconstruct the pair we found containing the min value from the map
+        std::pair<K,V> minPair = std::pair(minKey, minValue); 
+        return minPair;
+    }
+
+
+    /**
      * @brief Given a maplike object with a numeric type object for its keys (or a type that can be compared with > < operators),
      *        return the key-value pair from the maplike object with the greatest key.
      * 
@@ -536,6 +702,72 @@ namespace stevensMapLib
         //Reconstruct the pair we found containing the max key from the map
         std::pair<K,V> maxPair = std::pair(maxKey, maxValue); 
         return maxPair;
+    }
+
+
+    /**
+     * @brief Given a maplike object, return a std::vector of std::pairs containing all of the keys and values from the original
+     *        map, but sorted by key or value, and in either ascending or descending order.
+     * 
+     * @param map The maplike object we wish to convert to a sorted vector
+     * @param sortBy The element within the pair which we are considering for sorting. Valid values are "key" and "value"
+     * @param order The order by which to sort the elements in the returned vector. Valid values are "ascending"" and "descending"
+     * 
+     * @return A vector containing all of the key-value pairs from the orginal map, but sorted in the requested manner.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    std::vector< std::pair<K,V> > mapToSortedVector(    const M<K,V> & map,
+                                                        const std::string & sortBy = "value",
+                                                        const std::string & order = "ascending" )
+    {
+        //Initialize the vector we'll sort
+        std::vector< std::pair<K,V> > vector = stevensMapLib::mapToVector( map );
+
+        std::function<bool( std::pair<K,V>, std::pair<K,V> )> comparison;
+
+        //Narrow down our sorting method
+        if( sortBy == "value" )
+        {
+            if( order == "ascending" )
+            {
+                comparison = []( std::pair<K,V> a, std::pair<K,V> b ){ return a.second < b.second; };
+            }
+            else if( order == "descending")
+            {
+                comparison = []( std::pair<K,V> a, std::pair<K,V> b ){ return a.second > b.second; };
+            }
+            else
+            {
+                //Invalid order parameter
+                throw std::invalid_argument("stevensMapLib::mapToSortedVector() \"" + order + "\" is not a valid sorting order. Valid orders are \"ascending\" and \"descending\"");
+            }
+        }
+        else if( sortBy == "key" )
+        {
+            if( order == "ascending" )
+            {
+                comparison = []( std::pair<K,V> a, std::pair<K,V> b ){ return a.first < b.first; };
+            }
+            else if( order == "descending")
+            {
+                comparison = []( std::pair<K,V> a, std::pair<K,V> b ){ return a.first > b.first; };
+            }
+            else
+            {
+                //Invalid order parameter
+                throw std::invalid_argument("stevensMapLib::mapToSortedVector() \"" + order + "\" is not a valid sorting order. Valid orders are \"ascending\" and \"descending\"");
+            }
+        }
+        else
+        {
+            //Invalid sortBy parameter
+            throw std::invalid_argument("stevensMapLib::mapToSortedVector() \"" + sortBy + "\" is not a valid sort target. Valid orders are \"key\" and \"value\"");
+        }
+
+        //Sort the vector with the appropriate comparison function and return it
+        std::sort(vector.begin(), vector.end(), comparison);
+
+        return vector;
     }
 
 
