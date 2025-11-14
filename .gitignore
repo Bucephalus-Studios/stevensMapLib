@@ -1,0 +1,31 @@
+# Build directories
+build/
+_build/
+cmake-build-*/
+
+# IDE directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled binaries
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Test executables
+maplib_tests
+maplib_benchmarks
+
+# Dependencies
+_deps/
