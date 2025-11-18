@@ -4,7 +4,7 @@
  * A library used to expand the functionality of std::map and std::unordered_map
  */
 
-#include "stevensStringLib.h"
+#include "dependencies/stevensStringLib.h"
 #include <iterator>
 #include <functional>
 #include <algorithm>
