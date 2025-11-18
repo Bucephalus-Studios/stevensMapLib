@@ -4,10 +4,10 @@
  * A library used to expand the functionality of std::map and std::unordered_map
  */
 
-#include "dependencies/stevensStringLib.h"
 #include <iterator>
 #include <functional>
 #include <algorithm>
+#include <string>
 
 #ifndef STEVENSMAPLIB
 #define STEVENSMAPLIB
@@ -552,7 +552,7 @@ namespace stevensMapLib
     M<K,V> getPairsWhereKeysStartWith(const M<K,V>& map, const K& prefix)
     {
         return filterPairsByKeyPredicate(map,
-            [&prefix](const K& key) { return stevensStringLib::startsWith(key, prefix); });
+            [&prefix](const K& key) { return key.starts_with(prefix); });
     }
 
     /**
@@ -566,7 +566,7 @@ namespace stevensMapLib
     M<K,V> erasePairsWhereKeysStartWith(const M<K,V> map, const K& prefix)
     {
         return filterPairsByKeyPredicate(map,
-            [&prefix](const K& key) { return !stevensStringLib::startsWith(key, prefix); });
+            [&prefix](const K& key) { return !key.starts_with(prefix); });
     }
 
     /**
@@ -580,9 +580,17 @@ namespace stevensMapLib
     M<K,V> eraseStringFromKeys(const M<K,V>& map, const K& substring)
     {
         M<K,V> result;
-        K emptyString = K();  // Create empty string of type K
+        // If substring is empty, return a copy of the original map
+        if (substring.empty()) {
+            return map;
+        }
+
         for (const auto& [key, value] : map) {
-            K modifiedKey = stevensStringLib::replaceSubstr(key, substring, emptyString);
+            K modifiedKey = key;
+            size_t pos = 0;
+            while ((pos = modifiedKey.find(substring, pos)) != K::npos) {
+                modifiedKey.erase(pos, substring.length());
+            }
             result.emplace(modifiedKey, value);
         }
         return result;

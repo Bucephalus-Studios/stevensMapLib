@@ -1,23 +1,41 @@
 # stevensMapLib
-A simple C++ map library
+A single-header C++ library for expanding std::map and std::unordered_map functionality
 
-# Simple installation and usage:
-You can use this map library with the Beldum Package Manager:
-
-# Dependencies
-- stevensStringLib
+## Requirements
+- C++20 or later (uses `std::string::starts_with()`)
+- No external dependencies!
 
 ## Install
-Import "stevensMapLib.hpp" into your own project
+Simply copy `stevensMapLib.hpp` into your project and include it:
 
-or
-
-### Beldum Package Manager: https://github.com/Nord-Tech-Systems-LLC/beldum_package_manager
+```cpp
+#include "stevensMapLib.hpp"
 ```
+
+Or use the Beldum Package Manager: https://github.com/Nord-Tech-Systems-LLC/beldum_package_manager
+```bash
 mkdir new_project
 cd new_project
 beldum init
 beldum install stevensMapLib
+```
+
+## Building Tests
+```bash
+cd tests
+mkdir build && cd build
+cmake ..
+cmake --build .
+ctest
+```
+
+## Building Benchmarks
+```bash
+cd benchmarks
+mkdir build && cd build
+cmake ..
+cmake --build .
+./maplib_benchmarks
 ```
 
 ## Usage
