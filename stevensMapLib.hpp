@@ -4,17 +4,34 @@
  * A library used to expand the functionality of std::map and std::unordered_map
  */
 
+#pragma once
+
 #include <iterator>
 #include <functional>
 #include <algorithm>
 #include <string>
+#include <stevensMathLib.h>
 
-#ifndef STEVENSMAPLIB
-#define STEVENSMAPLIB
 
 namespace stevensMapLib
 {
     /*** Helper Functions (Internal) ***/
+
+    /**
+     * @brief Internal random number generator for stevensMapLib
+     *
+     * Uses modern C++ random engine (Mersenne Twister) with thread-local storage.
+     * This keeps the library header-only and portable.
+     */
+    namespace detail
+    {
+        inline size_t randomIndex(size_t max)
+        {
+            if (max == 0) return 0;
+            std::uniform_int_distribution<size_t> distribution(0, max - 1);
+            return distribution(stevensMathLib::getRandomEngine());
+        }
+    }
 
     /**
      * @brief Helper template to get a comparison function for pairs
@@ -274,6 +291,26 @@ namespace stevensMapLib
     }
 
     /**
+     * @brief Finds the first key associated with a given value (reverse lookup).
+     *
+     * @param map The maplike object to search.
+     * @param value The value to search for.
+     * @return The first key associated with the value, or a default-constructed K if not found.
+     */
+    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
+    K getKeyByValue(const M<K,V>& map, const V& value)
+    {
+        for (const auto& [key, val] : map) {
+            if (val == value) {
+                return key;
+            }
+        }
+
+        // Value not found - return default-constructed key
+        return K{};
+    }
+
+    /**
      * @brief Gets a random key from a maplike object.
      *
      * @param map The map object from which to pick a random key.
@@ -289,7 +326,7 @@ namespace stevensMapLib
         }
 
         auto iterator = map.begin();
-        std::advance(iterator, rand() % map.size());
+        std::advance(iterator, detail::randomIndex(map.size()));
         return iterator->first;
     }
 
@@ -309,7 +346,7 @@ namespace stevensMapLib
         }
 
         auto iterator = map.begin();
-        std::advance(iterator, rand() % map.size());
+        std::advance(iterator, detail::randomIndex(map.size()));
         return iterator->second;
     }
 
@@ -495,7 +532,7 @@ namespace stevensMapLib
         }
 
         auto iterator = map.begin();
-        std::advance(iterator, rand() % map.size());
+        std::advance(iterator, detail::randomIndex(map.size()));
 
         std::pair<K,V> randomPair(iterator->first, iterator->second);
         map.erase(iterator);
@@ -503,7 +540,7 @@ namespace stevensMapLib
     }
 
     /**
-     * @brief Inserts a range of integers as string keys into the map.
+     * @brief Inserts a range of integers as std::string keys into the map.
      *
      * @param map The maplike object to insert keys into.
      * @param rangeStart The first number to insert as a key.
@@ -522,7 +559,7 @@ namespace stevensMapLib
     /*** String Key Operations ***/
 
     /**
-     * @brief Helper to filter pairs based on a string key predicate.
+     * @brief Helper to filter pairs based on a std::string key predicate.
      *
      * @param map The maplike object to filter.
      * @param predicate Function returning true for pairs to include.
@@ -545,7 +582,7 @@ namespace stevensMapLib
      * @brief Returns a map containing only pairs whose keys start with a given string.
      *
      * @param map The maplike object to filter.
-     * @param prefix The prefix string to match.
+     * @param prefix The prefix std::string to match.
      * @return A map containing only pairs with keys starting with prefix.
      */
     template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
@@ -556,10 +593,10 @@ namespace stevensMapLib
     }
 
     /**
-     * @brief Returns a map with pairs whose keys start with a given string removed.
+     * @brief Returns a map with pairs whose keys start with a given std::string removed.
      *
      * @param map The maplike object to filter.
-     * @param prefix The prefix string to match for removal.
+     * @param prefix The prefix std::string to match for removal.
      * @return A map with matching pairs removed.
      */
     template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
@@ -572,7 +609,7 @@ namespace stevensMapLib
     /**
      * @brief Erases all instances of a substring from all keys in the map.
      *
-     * @param map The maplike object with string keys to modify.
+     * @param map The maplike object with std::string keys to modify.
      * @param substring The substring to erase from all keys.
      * @return A map with the substring erased from all keys.
      */
@@ -597,12 +634,12 @@ namespace stevensMapLib
     }
 
     /**
-     * @brief Creates a unique key string for the map.
+     * @brief Creates a unique key std::string for the map.
      *
      * @param map The maplike object for which to create a unique key.
-     * @param keyString The base key string to make unique.
+     * @param keyString The base key std::string to make unique.
      * @param algorithm The method to use for making the key unique.
-     * @return A unique key string not present in the map.
+     * @return A unique key std::string not present in the map.
      */
     template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
     K createUniqueKeyString(const M<K,V>& map, K keyString = "",
@@ -624,4 +661,3 @@ namespace stevensMapLib
     }
 };
 
-#endif
