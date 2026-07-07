@@ -63,19 +63,25 @@ namespace stevensMapLib
     /**
      * @brief Takes two maplike structures and performs the + operation on their shared keys.
      *
+     * NOTE: M is deduced as the full concrete map type (e.g. std::unordered_map<K,V>), rather
+     * than deducing K/V separately via a template template parameter — MSVC's template template
+     * argument deduction doesn't reliably handle the variadic-Args pattern these functions used
+     * to use (std::unordered_map's trailing Hash/KeyEqual/Allocator template arguments), even
+     * though GCC/Clang accept it. Use typename M::key_type / typename M::mapped_type internally.
+     *
      * @param mapA One of the maplike objects we are adding together.
      * @param mapB The other maplike object we are adding to the first.
      * @param addOperationTarget Target of the + operator: "values" or "keys and values"
      * @param omitKeysNotShared Whether to omit pairs from A and B that they do not share
      *
-     * @return M<K,V> The result of adding the two maps
+     * @return M The result of adding the two maps
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    M<K,V> addMaps(M<K,V> mapA, M<K,V> mapB,
+    template <typename M>
+    M addMaps(M mapA, M mapB,
                    std::string addOperationTarget = "keys and values",
                    bool omitKeysNotShared = false)
     {
-        M<K,V> result;
+        M result;
         const bool addValues = (addOperationTarget == "values");
 
         // Process pairs from map A
@@ -117,8 +123,8 @@ namespace stevensMapLib
      *
      * @return A maplike object with the combined keys and values.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    M<K,V> combineMaps(M<K,V> sourceMap, M<K,V> destinationMap, bool overwrite = false)
+    template <typename M>
+    M combineMaps(M sourceMap, M destinationMap, bool overwrite = false)
     {
         if (!overwrite) {
             destinationMap.insert(sourceMap.begin(), sourceMap.end());
@@ -139,9 +145,11 @@ namespace stevensMapLib
      * @param map The maplike object to convert to a vector.
      * @return std::vector<std::pair<K,V>> A vector containing all key-value pairs.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    std::vector<std::pair<K,V>> mapToVector(const M<K,V>& map)
+    template <typename M>
+    std::vector<std::pair<typename M::key_type, typename M::mapped_type>> mapToVector(const M& map)
     {
+        using K = typename M::key_type;
+        using V = typename M::mapped_type;
         std::vector<std::pair<K,V>> result;
         result.reserve(map.size());
 
@@ -157,9 +165,11 @@ namespace stevensMapLib
      * @param map The map to convert to a vector of tuples.
      * @return std::vector<std::tuple<K,V>> A vector containing tuples of key-value pairs.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    std::vector<std::tuple<K,V>> mapToVecOfTuples(M<K,V> map)
+    template <typename M>
+    std::vector<std::tuple<typename M::key_type, typename M::mapped_type>> mapToVecOfTuples(M map)
     {
+        using K = typename M::key_type;
+        using V = typename M::mapped_type;
         std::vector<std::tuple<K,V>> result;
         result.reserve(map.size());
 
@@ -178,11 +188,13 @@ namespace stevensMapLib
      *
      * @return A vector containing all key-value pairs, sorted as requested.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    std::vector<std::pair<K,V>> mapToSortedVector(const M<K,V>& map,
+    template <typename M>
+    std::vector<std::pair<typename M::key_type, typename M::mapped_type>> mapToSortedVector(const M& map,
                                                    const std::string& sortBy = "value",
                                                    const std::string& order = "ascending")
     {
+        using K = typename M::key_type;
+        using V = typename M::mapped_type;
         std::vector<std::pair<K,V>> result = mapToVector(map);
 
         // Validate parameters
@@ -236,9 +248,10 @@ namespace stevensMapLib
      * @param map The maplike object from which to extract keys.
      * @return std::vector<K> A vector containing all keys.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    std::vector<K> getKeyVector(const M<K,V>& map)
+    template <typename M>
+    std::vector<typename M::key_type> getKeyVector(const M& map)
     {
+        using K = typename M::key_type;
         std::vector<K> keys;
         keys.reserve(map.size());
 
@@ -254,9 +267,10 @@ namespace stevensMapLib
      * @param map The maplike object from which to extract values.
      * @return std::vector<V> A vector containing all values.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    std::vector<V> getValueVector(const M<K,V>& map)
+    template <typename M>
+    std::vector<typename M::mapped_type> getValueVector(const M& map)
     {
+        using V = typename M::mapped_type;
         std::vector<V> values;
         values.reserve(map.size());
 
@@ -272,8 +286,8 @@ namespace stevensMapLib
      * @param map The map object from which to get the first key.
      * @return The first key from the map.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    K getFirstKey(const M<K,V>& map)
+    template <typename M>
+    typename M::key_type getFirstKey(const M& map)
     {
         return map.begin()->first;
     }
@@ -284,8 +298,8 @@ namespace stevensMapLib
      * @param map The map object from which to get the first value.
      * @return The first value from the map.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    V getFirstValue(const M<K,V>& map)
+    template <typename M>
+    typename M::mapped_type getFirstValue(const M& map)
     {
         return map.begin()->second;
     }
@@ -297,9 +311,10 @@ namespace stevensMapLib
      * @param value The value to search for.
      * @return The first key associated with the value, or a default-constructed K if not found.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    K getKeyByValue(const M<K,V>& map, const V& value)
+    template <typename M>
+    typename M::key_type getKeyByValue(const M& map, const typename M::mapped_type& value)
     {
+        using K = typename M::key_type;
         for (const auto& [key, val] : map) {
             if (val == value) {
                 return key;
@@ -317,8 +332,8 @@ namespace stevensMapLib
      * @return A random key found in map.
      * @throws std::invalid_argument if the map is empty.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    K getRandomKey(const M<K,V>& map)
+    template <typename M>
+    typename M::key_type getRandomKey(const M& map)
     {
         if (map.empty()) {
             throw std::invalid_argument(
@@ -337,8 +352,8 @@ namespace stevensMapLib
      * @return A random value found in map.
      * @throws std::invalid_argument if the map is empty.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    V getRandomValue(const M<K,V>& map)
+    template <typename M>
+    typename M::mapped_type getRandomValue(const M& map)
     {
         if (map.empty()) {
             throw std::invalid_argument(
@@ -361,9 +376,8 @@ namespace stevensMapLib
      * @param functionName Name of the calling function for error messages.
      * @return The pair with the extreme value.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V,
-              typename... Args, typename Compare, typename Extract>
-    std::pair<K,V> findExtremePair(const M<K,V>& map, Compare compare, Extract extractValue,
+    template <typename M, typename Compare, typename Extract>
+    std::pair<typename M::key_type, typename M::mapped_type> findExtremePair(const M& map, Compare compare, Extract extractValue,
                                     const std::string& functionName)
     {
         if (map.empty()) {
@@ -392,9 +406,10 @@ namespace stevensMapLib
      * @return A std::pair<K,V> containing the greatest value.
      * @throws std::invalid_argument if the map is empty.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    std::pair<K,V> getPairWithMaxValue(const M<K,V>& map)
+    template <typename M>
+    std::pair<typename M::key_type, typename M::mapped_type> getPairWithMaxValue(const M& map)
     {
+        using V = typename M::mapped_type;
         return findExtremePair(map,
             std::greater<V>(),
             [](const auto& pair) { return pair.second; },
@@ -408,9 +423,10 @@ namespace stevensMapLib
      * @return A std::pair<K,V> containing the smallest value.
      * @throws std::invalid_argument if the map is empty.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    std::pair<K,V> getPairWithMinValue(const M<K,V>& map)
+    template <typename M>
+    std::pair<typename M::key_type, typename M::mapped_type> getPairWithMinValue(const M& map)
     {
+        using V = typename M::mapped_type;
         return findExtremePair(map,
             std::less<V>(),
             [](const auto& pair) { return pair.second; },
@@ -424,9 +440,10 @@ namespace stevensMapLib
      * @return A std::pair<K,V> containing the greatest key.
      * @throws std::invalid_argument if the map is empty.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    std::pair<K,V> getPairWithMaxKey(const M<K,V>& map)
+    template <typename M>
+    std::pair<typename M::key_type, typename M::mapped_type> getPairWithMaxKey(const M& map)
     {
+        using K = typename M::key_type;
         return findExtremePair(map,
             std::greater<K>(),
             [](const auto& pair) { return pair.first; },
@@ -442,9 +459,10 @@ namespace stevensMapLib
      * @param initialValue The value to begin the sum from.
      * @return The sum of all values in the map added to the initial value.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    V sumAllValues(M<K,V> map, V initialValue = 0)
+    template <typename M>
+    typename M::mapped_type sumAllValues(M map, typename M::mapped_type initialValue = 0)
     {
+        using V = typename M::mapped_type;
         V sum = initialValue;
         for (const auto& [key, value] : map) {
             sum += value;
@@ -459,8 +477,8 @@ namespace stevensMapLib
      * @param factor The factor to multiply each value by.
      * @return The map with all values multiplied by the factor.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    M<K,V> multiplyWithValues(M<K,V> map, long double factor)
+    template <typename M>
+    M multiplyWithValues(M map, long double factor)
     {
         for (auto& [key, value] : map) {
             value = value * factor;
@@ -492,8 +510,8 @@ namespace stevensMapLib
      * @param key The key to check for.
      * @return true if map contains only the specified key, false otherwise.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    bool containsOnly(const M<K,V>& map, const K& key)
+    template <typename M>
+    bool containsOnly(const M& map, const typename M::key_type& key)
     {
         return map.size() == 1 && map.find(key) != map.end();
     }
@@ -507,8 +525,8 @@ namespace stevensMapLib
      * @param keysToErase A vector of keys to erase from the map.
      * @return The map with specified keys erased.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    M<K,V> erase(M<K,V> map, const std::vector<K>& keysToErase)
+    template <typename M>
+    M erase(M map, const std::vector<typename M::key_type>& keysToErase)
     {
         for (const auto& key : keysToErase) {
             map.erase(key);
@@ -523,9 +541,11 @@ namespace stevensMapLib
      * @return A random pair from the map.
      * @throws std::invalid_argument if the map is empty.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    std::pair<K,V> popRandom(M<K,V>& map)
+    template <typename M>
+    std::pair<typename M::key_type, typename M::mapped_type> popRandom(M& map)
     {
+        using K = typename M::key_type;
+        using V = typename M::mapped_type;
         if (map.empty()) {
             throw std::invalid_argument(
                 "stevensMapLib::popRandom() cannot pop a random pair from an empty map");
@@ -546,8 +566,8 @@ namespace stevensMapLib
      * @param rangeStart The first number to insert as a key.
      * @param rangeEnd The last number to insert as a key.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    void insertNumericRangeAsStringKeys(M<K,V>& map,
+    template <typename M>
+    void insertNumericRangeAsStringKeys(M& map,
                                         const long long int& rangeStart,
                                         const long long int& rangeEnd)
     {
@@ -565,11 +585,10 @@ namespace stevensMapLib
      * @param predicate Function returning true for pairs to include.
      * @return Filtered map.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V,
-              typename... Args, typename Predicate>
-    M<K,V> filterPairsByKeyPredicate(const M<K,V>& map, Predicate predicate)
+    template <typename M, typename Predicate>
+    M filterPairsByKeyPredicate(const M& map, Predicate predicate)
     {
-        M<K,V> result;
+        M result;
         for (const auto& [key, value] : map) {
             if (predicate(key)) {
                 result.emplace(key, value);
@@ -585,9 +604,10 @@ namespace stevensMapLib
      * @param prefix The prefix std::string to match.
      * @return A map containing only pairs with keys starting with prefix.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    M<K,V> getPairsWhereKeysStartWith(const M<K,V>& map, const K& prefix)
+    template <typename M>
+    M getPairsWhereKeysStartWith(const M& map, const typename M::key_type& prefix)
     {
+        using K = typename M::key_type;
         return filterPairsByKeyPredicate(map,
             [&prefix](const K& key) { return key.starts_with(prefix); });
     }
@@ -599,9 +619,10 @@ namespace stevensMapLib
      * @param prefix The prefix std::string to match for removal.
      * @return A map with matching pairs removed.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    M<K,V> erasePairsWhereKeysStartWith(const M<K,V> map, const K& prefix)
+    template <typename M>
+    M erasePairsWhereKeysStartWith(const M map, const typename M::key_type& prefix)
     {
+        using K = typename M::key_type;
         return filterPairsByKeyPredicate(map,
             [&prefix](const K& key) { return !key.starts_with(prefix); });
     }
@@ -613,10 +634,11 @@ namespace stevensMapLib
      * @param substring The substring to erase from all keys.
      * @return A map with the substring erased from all keys.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    M<K,V> eraseStringFromKeys(const M<K,V>& map, const K& substring)
+    template <typename M>
+    M eraseStringFromKeys(const M& map, const typename M::key_type& substring)
     {
-        M<K,V> result;
+        using K = typename M::key_type;
+        M result;
         // If substring is empty, return a copy of the original map
         if (substring.empty()) {
             return map;
@@ -641,10 +663,11 @@ namespace stevensMapLib
      * @param algorithm The method to use for making the key unique.
      * @return A unique key std::string not present in the map.
      */
-    template <template <typename, typename, typename...> class M, typename K, typename V, typename... Args>
-    K createUniqueKeyString(const M<K,V>& map, K keyString = "",
+    template <typename M>
+    typename M::key_type createUniqueKeyString(const M& map, typename M::key_type keyString = "",
                            const std::string& algorithm = "integer concatenation")
     {
+        using K = typename M::key_type;
         if (algorithm != "integer concatenation") {
             return keyString;
         }
@@ -660,4 +683,3 @@ namespace stevensMapLib
         return keyString;
     }
 };
-
